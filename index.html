@@ -1,0 +1,902 @@
+<!doctype html>
+<head>
+<meta charset="utf-8" />
+
+<link href="https://fonts.googleapis.com/css?family=Merriweather:400,700|Open+Sans:400,700&display=swap" rel="stylesheet">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.15/lodash.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/5.12.0/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<style>
+
+html, body, #app{
+  height: 100%;
+}
+
+div{
+  font-family: 'Merriweather', serif;
+  font-size: 16px;
+  color: #222;
+}
+
+.sans, .sans *{
+  font-family: 'Open Sans', sans-serif;
+  color: #777;
+}
+
+
+.smaller, .smaller *{
+  font-size: 12px;
+}
+
+.story > div, img{
+  margin-bottom: 16px;
+}
+
+button{
+	font-size: 28px;
+	padding: 8px;
+}
+
+
+
+.wobble{
+  position: absolute;
+  animation: wobble 5s ease 0s infinite;
+}
+@keyframes wobble {
+  0% {
+    transform: rotate(0turn);
+  }
+  5% {
+    transform: rotate(0.003turn);
+  }
+  10% {
+    transform: rotate(0turn);
+  }
+  12% {
+    transform: rotate(0.003turn);
+  }
+  15% {
+    transform: rotate(0turn);
+  }
+}
+.bounce{
+  position: absolute;
+  animation: bounce 3s ease 0s infinite;
+}
+@keyframes bounce {
+  0% {
+    transform: translateY(10px);
+  }
+  6% {
+    transform: translateY(-15px);
+  }
+  12% {
+    transform: translateY(5px);
+  }
+  20% {
+    transform: translateY(-5px);
+  }
+  22% {
+    transform: translateY(0px);
+  }
+}
+
+.animated-bar {
+  transition: all .5s ease;
+}
+
+h4{
+  margin-top: 32px;
+  margin-bottom: 8px;
+}
+</style>
+
+</head>
+
+<body>
+
+<div id="app">
+
+<div v-if="isMounted" class="story" style="position:relative; padding: 16px;  max-width:600px">
+
+  <h1>{{i18n('Your Test Results')}}</h1>
+
+<!--  <img src="kormo.png" style="width:40px" class="bounce"> -->
+ 
+
+<!--<button>Level up with a Kormo video</button>-->
+
+<!--<iframe id="ytplayer" type="text/html" width="640" height="360"
+  src="https://www.youtube.com/embed/M7lc1UVf-VE?autoplay=1&origin=http://example.com"
+  frameborder="0"></iframe>
+-->
+
+<div style="margin: 32px 0px">
+
+<div v-if="cond==0">
+  <control-bar v-for="userSkill in userSkills" :score="userSkill.score" :name="i18n(userSkill.name)" :key="userSkill.name+'control'"></control-bar>
+</div>
+
+
+<div v-if="cond==1" style="display: grid; grid-auto-flow: column">
+
+  <div style="width:100px; align-self:end; opacity: 0.5; ">
+    <img src="arrow.png" style="max-width: 100%">
+    <div class="sans" style="position: relative; top:-24px; font-size:13px">{{i18n('Practice and improve your score')}}</div>
+  </div>
+
+  <experiment-bar v-for="(userSkill, ind) in userSkills" :animate="ind == 0" :score="userSkill.score" :name="i18n(userSkill.name)" :key="userSkill.name+'experiment'"></experiment-bar>
+</div>
+</div>
+
+
+
+<h4>{{i18n('You are able to...')}}</h4>
+<ul>
+<li v-for="ability in userFeedback[userId].ability">{{i18n(ability)}}</li>
+</ul>
+
+
+<h4>{{i18n('To improve, you could...')}}</h4>
+<ul>
+<li v-for="improve in userFeedback[userId].improve">{{i18n(improve)}}</li>
+</ul>
+
+
+<h4>{{i18n('Please take this 1 min survey...')}}</h4>
+<iframe :src="'https://docs.google.com/forms/d/e/1FAIpQLScwfOf2gMugc8N5wEQpqXrt_gFCiZ3_VS10nTLzItFR8mxpJA/viewform?embedded=true&entry.1199897573=' + userId" width="640" height="1003" frameborder="0" marginheight="0" marginwidth="0">Loading…</iframe>
+
+</div> <!-- end center div -->
+</div> <!-- end #app -->
+
+
+
+<script type="text/x-template" id="control-bar-template">
+<div style="position:relative; display:inline-block; width:104px;">
+
+  <div class="sans smaller" style="text-transform:capitalize; margin-bottom:4px;">
+    <div style="font-weight:700">{{name}}</div> 
+    <!--Top <span :style="{color: colorScale(nScore)}">{{$root.roundTo(percent)}}%</span>-->
+  </div>
+  <div style="font-size:20px; margin-bottom:8px">{{$root.roundTo(nScore*100)}}%</div>
+
+  <div v-for="value in values" :style="valueStyle(value)"></div>
+
+</div>
+</script>
+
+
+
+<script type="text/x-template" id="experiment-bar-template">
+
+<div style="display:inline-block; width:104px;">
+  <div class="sans smaller" style="text-transform:capitalize; margin-bottom:4px;">
+    <div style="font-weight:700">{{name}}</div> 
+  </div>
+
+  <div style="position:relative;">
+
+    <!-- rainbow bar -->
+    <div v-for="value in values" :style="valueStyle(value)"></div>
+
+    <!-- grey bar that hides some of the rainbow bar -->
+    <div ref="grey-bar" class="animated-bar" style="position:absolute;background-color: #eee;top:0px; border-bottom:1px solid white"
+         :style="{width: width+'px', height: height+'px'}"></div>
+
+  </div>
+</div>
+</script>
+
+
+<script>
+
+const translations = {
+'Overall': 'সামগ্রিক',
+'Sentences': 'বাক্য',
+'Vocabulary': 'শব্দতালিকা',
+'Fluency': 'সাবলীলতা',
+'Pronunciation': 'উচ্চারণ',
+'Practice and improve your score': 'অনুশীলন এবং আপনার স্কোর উন্নতি',
+
+
+'Your Test Results': 'আপনার টেস্ট এর ফলাফল',
+'Click to improve your score': 'আপনার স্কোর ভালো করতে ক্লিক করুন',
+'Click to practice': 'অনুশীলন করতে ক্লিক করুন',
+'You are able to...': 'আপনি পারেন...',
+'To improve, you could...': 'স্কোর ভালো করতে আপনি করতে পারেন....',
+'Please take this 1 min survey...': 'অনুগ্রহ করে ১ মিনিট এর সার্ভে-তে অংশগ্রহণ করুন.....',
+'Kormo Language Test Survey': 'Kormo ল্যাঙ্গুয়েজে টেস্ট এর সার্ভে করুন',
+'Are your scores higher or lower than you expected?': 'আপনার অর্জন করা স্কোর কি আপনার আশা থেকে কম নাকি বেশি ? ',
+'Much lower': 'অনেক কম ',
+'A little lower': 'একটু কম ',
+'About what I expected': 'আমি যা আশা করেছিলাম তাই ',
+'A little higher': 'একটু বেশি ',
+'Much higher': 'অনেক বেশি ',
+'How many minutes each day do you *currently* practice English?': 'বর্তমানে প্রতিদিন আপনি কত মিনিট ইংরেজি চর্চা করেন ?',
+'How many minutes each day can you *commit to* practicing English?': 'ইংরেজি চর্চার জন্য আপনি প্রতিদিন কত মিনিট সময় দিতে পারবেন বলে প্রতিশুতি দিতে পারবেন?',
+'How many minutes each day will you practice English after viewing your scores?': 'আপনার স্কোর দেখার পর আপনি প্রতিদিন কত মিনিট ইংরেজি চর্চা করবেন?',
+'Study id (please do not change the pre-filled value). ': 'স্টাডি আইডি (অনুগ্রহ করে ইতিমধ্যে পূরণ করা তথ্য সমূহ পরিবর্তন করবেন না)',
+'Practice giving clear, detailed descriptions of complex subjects.': 'কঠিন বিষয়গুলোর স্পষ্ট ও বিস্তারিত বর্ণনা দেওয়ার অনুশীলন করুন।',
+'Practice using language extensively for social purposes, including emotional, allusive, and joking usage.': 'সমাজে ব্যবহার, ইঙ্গিতপূর্ণ ব্যবহার, সংবেদনশীলক্ষেত্রে ব্যবহার ও রসিকতায় ব্যবহার করার মতো ভাষা অনুশীলন করুন',
+'Can describe events, real or imagined.': 'বর্ণনা করতে পারে বাস্তব অথবা অবাস্তব ঘটনা সমূহ',
+'May be able to understand a few words when addressed directly and slowly.': 'যখন সরাসরি এবং ধীর গতিতে কথোপকথন করা হয় তখন কিছু শব্দ বুঝতে পারে',
+'Can control a narrow repertoire dealing with concrete everyday needs.': 'দৈনন্দিন কাজের জন্য প্রয়োজনীয় ভাষার বিভিন্ন ধরণের সংক্ষিপ্তরূপের এর উপর নিয়ন্ত্রণ আছে',
+'May be able to ask and tell day, time of day, and date.': 'দিন, দিনের কোনো এক সময়, এবং তারিখ জিজ্ঞেস করতে পারে অথবা উত্তর দিতে পারে ',
+'Has a very basic range of simple expressions about personal details and needs of a concrete type.': 'দৈনন্দিন কাজের জন্য এবং নিজস্ব বিবরণের উপর প্রয়োজনীয় এক্সপ্রেশনের উপর নিয়ন্ত্রণ রয়েছে',
+'Practice sharing your dreams, hopes, and ambitions, expressing thoughts on increasingly abstract topics.': 'নিজ থেকে বানানো কিছু বিষয়ে আপনার স্বপ্ন, আশা এবং ভবিষ্যতের পরিকল্পনা শেয়ার করতে শিখুন ',
+'Practice telling stories, giving descriptions of events and activities in as much detail as you can.': 'গল্প বলা প্রাকটিস করুন, কোনো একটা ইভেন্টের ব্যপারে বিস্তারিত বলতে শিখুন',
+'Can give short, basic descriptions of events and activities.': 'কোনো একটা ইভেন্টের ছোট এবং প্রাথমিক বর্ণনা দিতে সক্ষম',
+'Can explain what he/she likes or dislikes about something.': 'পছন্দ এবং অপছন্দের জিনিস গুলো বর্ণনা করতে পারে',
+'Can ask very simply for repetition when he/she does not understand.': 'যখন কোনো কিছু বুঝতে সমস্যা হয় তখন পুনরাবৃতি করার জন্য সহজভাবে জিজ্ঞেস করতে সক্ষম',
+'Practice using appropriate stress and intonation to convey shades of meaning precisely.': 'উপযুক্ত স্বরভঙ্গি এবং নিশ্বাস নিয়ে প্রাকটিস করা শিখুন বিভিন্ন শব্দ অর্থের ধরণ সঠিকভাবে',
+'Can understand most TV news and current affairs programs.': 'কারেন্ট অ্যাফেয়ার্স অথবা টিভি-তে প্রচারিত সংবাদ সহজেই বুঝতে পারে',
+'Try to initiate, maintain, and close face-to-face conversations, inviting others into the discussion.': 'অন্যানদের সাথে কথা বলা শুরু করা , চালিয়ে যাওয়া এবং সঠিকভাবে কথোপকথন শেষ করার চেষ্টা করুন',
+'Can briefly give reasons and explanations for opinions, plans, and actions.': 'নিজস্ব অভিমত, পরিকল্পনা এবং কাজের পিছনের যুক্তি সুন্দরভাবে বোঝাতে সক্ষম',
+'Practice asking and answering questions about habits and routines.': 'অভ্যাস এবং দৈনন্দিন কাজের ব্যপারে প্রশ্ন-উত্তর করতে সক্ষম',
+'Practice providing clear, detailed descriptions on a wide range of subjects related to your field of interest.': 'আপনার ইচ্ছাকৃত যেকোনো ক্ষেত্রের উপর পরিষ্কার এবং বিস্তারিত বর্ণনা দিতে শিখুন',
+'Practice summarizing long, demanding texts.': 'বিশাল টেক্সটের সংক্ষিপ্তকরণ প্রাকটিস করুন ',
+'Study politeness conventions, and learning to act appropriately in different contexts.': 'বিভিন্ন কন্টেক্সটে কথা বলার সময় বিনয়ী থাকা ও ভালোভাবে কথা বলা শিখুন',
+'Can catch the main point in short, clear, simple messages and announcements.': 'আসল বিষয় ছোট আকারে, পরিষ্কারভাবে বলা হলে তা বুঝতে পারে',
+'Can produce simple, mainly isolated phrases about people and places.': 'মানুষ এবং জায়গা সম্মন্ধে ছোট বাক্যাংশ তৈরী করতে পারে',
+'Focus on developing a clear pronunciation and intonation.': 'পরিষ্কার উচ্চারণ ও স্বরভঙ্গি এর উন্নয়নের দিকে নজর দিন',
+'Practice conveying degrees of emotion and highlighting the personal significance of events and experiences.': 'যেকোনো ইভেন্ট অথবা অভিজ্ঞতার উপর ভিত্তি করে অনুভতির ভিন্ন মাত্রা প্রকাশ করার অভ্যাস করুন',
+'Can enter unprepared into conversations on familiar topics.': 'জানা বিষয়ের উপর কথোপকথনে প্রস্তুতি ছাড়া যোগ হতে পারে ',
+'Can describe him/herself, what he/she does, and where he/she lives.': 'নিজের ব্যপারে বিস্তারিত বলতে পারে যেমন বর্তমানে যা করছে এবং যেখানে থাকে',
+'Practice explaining a viewpoint on a topical issue giving the advantages and disadvantages of various options.': 'সাময়িক সমস্যার উপরে বিভিন্ন সমাধানের সুবিধা ও সুবিধার উপর ভিত্তি করে আপনার নিজস্ব দৃষ্টিকোণ ব্যাখ্যা করার চর্চা করুন',
+'Can handle numbers, quantities, cost, and time.': 'নম্বর, পরিমান, খরচ এবং সময় বুঝতে সক্ষম ',
+'Practice identifying arguments supporting and opposing points of view while listening to an animated discussion.': 'যেকোনো এনিমেটেড কথাবার্তার উপর ভিত্তি করে কোনো আর্গুমেন্ট এর পক্ষের ও বিপক্ষের পয়েন্ট  গুলো সনাক্ত করা',
+'May be able to use some basic greetings.': 'সাধারণ অভিবাদনগুলি ব্যবহার করতে সক্ষম',
+'Practice expressing yourself fluently in spontaneous conversations and goal-directed contexts.': 'স্বতঃস্ফূর্ত ও লক্ষ্য-নির্দেশিত কথোপকথনে সাবলীল এবং আত্মবিশ্বাসের সাথে নিজেকে প্রকাশ করার চর্চা করুন',
+'Can ask someone to clarify or elaborate what he/she has just said.': 'কেউ কিছু বললে তা বিস্তারিত বলার জন্য জিজ্ঞেস করতে পারে',
+'Use the overall meaning of texts and utterances to derive the probable meaning of unknown words from the context.': 'যেকোনো টেক্সটের সামগ্রিক অর্থ ও উচারণের ব্যবহার করে অজানা শব্দের সম্ভাব্য অর্থ বের করা',
+'Practice inferring the meaning of unknown words from the context and deducing sentence meaning.': 'প্রসঙ্গ অনুযায়ী এবং কোনো বাক্য এর অর্থ অনুমান করে অজানা শব্দের অর্থ বের করার চর্চা করুন',
+'Can describe dreams, hopes, and ambitions.': 'স্বপ্ন, আশা এবং ভবিষ্যতের পরিকল্পনা শেয়ার করতে সক্ষম',
+'Practice following the main points of formal lectures or talks and extended discussions around you.': 'ফর্মাল বক্তব্য অথবা কথোপকথনের উপর ভিত্তি করে আলোচনা দীর্ঘায়িত করার চেষ্টা করুন',
+'Can tell a story or describe something in a simple list of points.': 'কোনো একটা বিষয় সাধারণ লিস্টে বর্ণনা করতে ও গল্প হিসেবে বলতে সক্ষম',
+'Language is generally very limited.': 'ভাষা সাধারণত খুবই সীমিত',
+'Has a basic vocabulary repertoire of isolated words and phrases related to particular concrete situations.': 'বাস্তবিক পরিস্থিতিতে ব্যবহৃত ভিন্ন ধরণের শব্দ ও বাক্য এর উপর জ্ঞান আছে',
+'Has sufficient vocabulary to conduct routine, everyday transactions involving familiar situations and topics.': 'পরিচিত বিষয়বস্তু অথবা অবস্থা নিয়ে দৈনন্দিন কথা বলার জন্য যথেষ্ট শব্দজ্ঞান আছে',
+'Focus on intelligibility, stress, pronunciation, and intonation when speaking.': 'কথা বলার সময় খেয়ালে রাখবেন শব্দের বোধগম্যতা, সঠিক উচ্চারণ, উচ্চারণের উচ্চতা এবং নিম্নতা',
+'Can express the main point he/she wants to make comprehensibly.': 'যা বলতে ইচ্ছুক তার মূল পয়েন্ট সমূহ বিস্তারিতভাবে বলতে সক্ষম',
+'Can keep up with an animated conversation between native speakers.': 'একজন নেটিভ বক্তার সাথে এনিমেটেড কথা বলা চালিয়ে যেতে পারে ',
+'Practice broadening your lexical repertoire (including your range of idiomatic and colloquial expressions).': 'আপনার শব্দজ্ঞান বাড়ানোর চর্চা করুন (বাগধারা ও চলিত ভাষার ব্যবহার সহ)',
+'Has acquired a clear, natural pronunciation and intonation.': 'স্পষ্ট ও স্বাভাবিক উচ্চারণ এবং উচ্চারণভঙ্গি আছে ',
+'Shows only limited control of a few simple grammatical structures and sentence patterns in a learnt repertoire.': 'গ্রামার এর সাধারণ স্ট্রাকচার এবং বাক্য প্যাটার্ন এর উপর কিছুটা নিয়ন্ত্রণ আছে',
+'Practice pronunciation by modeling target sounds.': 'নির্দিষ্ট শব্দ বাছাই করে নিয়মিত উচ্চারণ প্রাকটিস করুন',
+'May be able to make simple purchases where pointing or other gestures can support the verbal reference.': 'শব্দ সমূহ কিছুটা বুঝতে পারে যদি শব্দের সাথে অঙ্গভঙ্গি থাকে অথবা পয়েন্ট করে বলা হয়',
+};
+
+
+const userFeedback = {
+'5': {
+  ability: [
+'Can keep up with an animated conversation between native speakers.',
+'Can understand most TV news and current affairs programs.',
+'Has acquired a clear, natural pronunciation and intonation.',
+  ],
+  improve: [
+'Practice broadening your lexical repertoire (including your range of idiomatic and colloquial expressions).',
+'Practice giving clear, detailed descriptions of complex subjects.',
+'Practice using appropriate stress and intonation to convey shades of meaning precisely.',
+'Practice using language extensively for social purposes, including emotional, allusive, and joking usage.',
+'Practice expressing yourself fluently in spontaneous conversations and goal-directed contexts.',
+'Practice summarizing long, demanding texts.',
+  ]
+},
+
+
+'4': {
+  ability: [
+'Can describe dreams, hopes, and ambitions.',
+'Can describe events, real or imagined.',
+'Can briefly give reasons and explanations for opinions, plans, and actions.',
+'Can enter unprepared into conversations on familiar topics.',
+'Can express the main point he/she wants to make comprehensibly.',
+'Can ask someone to clarify or elaborate what he/she has just said.',
+  ],
+
+  improve: [
+'Practice providing clear, detailed descriptions on a wide range of subjects related to your field of interest.',
+'Practice explaining a viewpoint on a topical issue giving the advantages and disadvantages of various options.',
+'Practice conveying degrees of emotion and highlighting the personal significance of events and experiences.',
+'Practice identifying arguments supporting and opposing points of view while listening to an animated discussion.',
+'Focus on developing a clear pronunciation and intonation.',
+  ]
+},
+
+'11': {
+  ability: [
+'Can catch the main point in short, clear, simple messages and announcements.',
+'Can give short, basic descriptions of events and activities.',
+'Can explain what he/she likes or dislikes about something.',
+'Has sufficient vocabulary to conduct routine, everyday transactions involving familiar situations and topics.',
+'Can control a narrow repertoire dealing with concrete everyday needs.',
+'Can tell a story or describe something in a simple list of points.',
+'Can ask very simply for repetition when he/she does not understand.',
+
+  ],
+  improve: [
+'Practice following the main points of formal lectures or talks and extended discussions around you.',
+'Practice sharing your dreams, hopes, and ambitions, expressing thoughts on increasingly abstract topics.',
+'Focus on intelligibility, stress, pronunciation, and intonation when speaking.',
+'Study politeness conventions, and learning to act appropriately in different contexts.',
+'Practice inferring the meaning of unknown words from the context and deducing sentence meaning.',
+'Try to initiate, maintain, and close face-to-face conversations, inviting others into the discussion.',
+  ]
+},
+
+
+'10': {
+  ability: [
+'Can catch the main point in short, clear, simple messages and announcements.',
+'Can give short, basic descriptions of events and activities.',
+'Can explain what he/she likes or dislikes about something.',
+'Has sufficient vocabulary to conduct routine, everyday transactions involving familiar situations and topics.',
+'Can control a narrow repertoire dealing with concrete everyday needs.',
+'Can tell a story or describe something in a simple list of points.',
+'Can ask very simply for repetition when he/she does not understand.',
+  ],
+
+  improve: [
+'Practice following the main points of formal lectures or talks and extended discussions around you.',
+'Practice sharing your dreams, hopes, and ambitions, expressing thoughts on increasingly abstract topics.',
+'Focus on intelligibility, stress, pronunciation, and intonation when speaking.',
+'Study politeness conventions, and learning to act appropriately in different contexts.',
+'Practice inferring the meaning of unknown words from the context and deducing sentence meaning.',
+'Try to initiate, maintain, and close face-to-face conversations, inviting others into the discussion.',
+  ]
+},
+
+'8': {
+  ability: [
+'Can produce simple, mainly isolated phrases about people and places.',
+'Can describe him/herself, what he/she does, and where he/she lives.',
+'Can handle numbers, quantities, cost, and time.',
+'Has a very basic range of simple expressions about personal details and needs of a concrete type.',
+'Has a basic vocabulary repertoire of isolated words and phrases related to particular concrete situations.',
+'Shows only limited control of a few simple grammatical structures and sentence patterns in a learnt repertoire.',
+  ],
+  improve: [
+'Practice telling stories, giving descriptions of events and activities in as much detail as you can.',
+'Practice asking and answering questions about habits and routines.',
+'Practice pronunciation by modeling target sounds.',
+'Use the overall meaning of texts and utterances to derive the probable meaning of unknown words from the context.',
+  ]
+},
+
+'9': {
+  ability: [
+'Can produce simple, mainly isolated phrases about people and places.',
+'Can describe him/herself, what he/she does, and where he/she lives.',
+'Can handle numbers, quantities, cost, and time.',
+'Has a very basic range of simple expressions about personal details and needs of a concrete type.',
+'Has a basic vocabulary repertoire of isolated words and phrases related to particular concrete situations.',
+'Shows only limited control of a few simple grammatical structures and sentence patterns in a learnt repertoire.',
+  ],
+  improve: [
+'Practice telling stories, giving descriptions of events and activities in as much detail as you can.',
+'Practice asking and answering questions about habits and routines.',
+'Practice pronunciation by modeling target sounds.',
+'Use the overall meaning of texts and utterances to derive the probable meaning of unknown words from the context.',
+  ]
+},
+
+'12': {
+  ability: [
+'Can produce simple, mainly isolated phrases about people and places.',
+'Can describe him/herself, what he/she does, and where he/she lives.',
+'Can handle numbers, quantities, cost, and time.',
+'Has a very basic range of simple expressions about personal details and needs of a concrete type.',
+'Has a basic vocabulary repertoire of isolated words and phrases related to particular concrete situations.',
+'Shows only limited control of a few simple grammatical structures and sentence patterns in a learnt repertoire.',
+  ],
+  improve: [
+'Practice telling stories, giving descriptions of events and activities in as much detail as you can.',
+'Practice asking and answering questions about habits and routines.',
+'Practice pronunciation by modeling target sounds.',
+'Use the overall meaning of texts and utterances to derive the probable meaning of unknown words from the context.',
+  ]
+},
+
+'13': {
+
+  ability: [
+'Can describe dreams, hopes, and ambitions.',
+'Can describe events, real or imagined.',
+'Can briefly give reasons and explanations for opinions, plans, and actions.',
+'Can enter unprepared into conversations on familiar topics.',
+'Can express the main point he/she wants to make comprehensibly.',
+'Can ask someone to clarify or elaborate what he/she has just said.',
+  ],
+  improve: [
+'Practice providing clear, detailed descriptions on a wide range of subjects related to your field of interest.',
+'Practice explaining a viewpoint on a topical issue giving the advantages and disadvantages of various options.',
+'Practice conveying degrees of emotion and highlighting the personal significance of events and experiences.',
+'Practice identifying arguments supporting and opposing points of view while listening to an animated discussion.',
+'Focus on developing a clear pronunciation and intonation.',
+
+  ]
+},
+
+'14': {
+
+  ability: [
+'Can catch the main point in short, clear, simple messages and announcements.',
+'Can give short, basic descriptions of events and activities.',
+'Can explain what he/she likes or dislikes about something.',
+'Has sufficient vocabulary to conduct routine, everyday transactions involving familiar situations and topics.',
+'Can control a narrow repertoire dealing with concrete everyday needs.',
+'Can tell a story or describe something in a simple list of points.',
+'Can ask very simply for repetition when he/she does not understand.',
+  ],
+  improve: [
+'Practice following the main points of formal lectures or talks and extended discussions around you.',
+'Practice sharing your dreams, hopes, and ambitions, expressing thoughts on increasingly abstract topics.',
+'Focus on intelligibility, stress, pronunciation, and intonation when speaking.',
+'Study politeness conventions, and learning to act appropriately in different contexts.',
+'Practice inferring the meaning of unknown words from the context and deducing sentence meaning.',
+'Try to initiate, maintain, and close face-to-face conversations, inviting others into the discussion.',
+  ]
+},
+
+'18': {
+
+  ability: [
+'Can describe dreams, hopes, and ambitions.',
+'Can describe events, real or imagined.',
+'Can briefly give reasons and explanations for opinions, plans, and actions.',
+'Can enter unprepared into conversations on familiar topics.',
+'Can express the main point he/she wants to make comprehensibly.',
+'Can ask someone to clarify or elaborate what he/she has just said.',
+  ],
+  improve: [
+'Practice providing clear, detailed descriptions on a wide range of subjects related to your field of interest.',
+'Practice explaining a viewpoint on a topical issue giving the advantages and disadvantages of various options.',
+'Practice conveying degrees of emotion and highlighting the personal significance of events and experiences.',
+'Practice identifying arguments supporting and opposing points of view while listening to an animated discussion.',
+'Focus on developing a clear pronunciation and intonation.',
+  ]
+},
+
+'17': {
+
+  ability: [
+'Can catch the main point in short, clear, simple messages and announcements.',
+'Can give short, basic descriptions of events and activities.',
+'Can explain what he/she likes or dislikes about something.',
+'Has sufficient vocabulary to conduct routine, everyday transactions involving familiar situations and topics.',
+'Can control a narrow repertoire dealing with concrete everyday needs.',
+'Can tell a story or describe something in a simple list of points.',
+'Can ask very simply for repetition when he/she does not understand.',
+  ],
+  improve: [
+'Practice following the main points of formal lectures or talks and extended discussions around you.',
+'Practice sharing your dreams, hopes, and ambitions, expressing thoughts on increasingly abstract topics.',
+'Focus on intelligibility, stress, pronunciation, and intonation when speaking.',
+'Study politeness conventions, and learning to act appropriately in different contexts.',
+'Practice inferring the meaning of unknown words from the context and deducing sentence meaning.',
+'Try to initiate, maintain, and close face-to-face conversations, inviting others into the discussion.',
+  ]
+},
+
+
+'15': {
+
+  ability: [
+'Can catch the main point in short, clear, simple messages and announcements.',
+'Can give short, basic descriptions of events and activities.',
+'Can explain what he/she likes or dislikes about something.',
+'Has sufficient vocabulary to conduct routine, everyday transactions involving familiar situations and topics.',
+'Can control a narrow repertoire dealing with concrete everyday needs.',
+'Can tell a story or describe something in a simple list of points.',
+'Can ask very simply for repetition when he/she does not understand.',
+  ],
+  improve: [
+'Practice following the main points of formal lectures or talks and extended discussions around you.',
+'Practice sharing your dreams, hopes, and ambitions, expressing thoughts on increasingly abstract topics.',
+'Focus on intelligibility, stress, pronunciation, and intonation when speaking.',
+'Study politeness conventions, and learning to act appropriately in different contexts.',
+'Practice inferring the meaning of unknown words from the context and deducing sentence meaning.',
+'Try to initiate, maintain, and close face-to-face conversations, inviting others into the discussion.',
+  ]
+},
+
+'16': {
+
+  ability: [
+'Language is generally very limited.',
+'May be able to make simple purchases where pointing or other gestures can support the verbal reference.',
+'May be able to ask and tell day, time of day, and date.',
+'May be able to use some basic greetings.',
+'May be able to understand a few words when addressed directly and slowly.',
+  ],
+  improve: [
+'Practice telling stories, giving descriptions of events and activities in as much detail as you can.',
+'Practice asking and answering questions about habits and routines.',
+'Practice pronunciation by modeling target sounds.',
+'Use the overall meaning of texts and utterances to derive the probable meaning of unknown words from the context.',
+  ]
+},
+
+'19': {
+
+  ability: [
+'Can produce simple, mainly isolated phrases about people and places.',
+'Can describe him/herself, what he/she does, and where he/she lives.',
+'Can handle numbers, quantities, cost, and time.',
+'Has a very basic range of simple expressions about personal details and needs of a concrete type.',
+'Has a basic vocabulary repertoire of isolated words and phrases related to particular concrete situations.',
+'Shows only limited control of a few simple grammatical structures and sentence patterns in a learnt repertoire.',
+  ],
+  improve: [
+'Practice telling stories, giving descriptions of events and activities in as much detail as you can.',
+'Practice asking and answering questions about habits and routines.',
+'Practice pronunciation by modeling target sounds.',
+'Use the overall meaning of texts and utterances to derive the probable meaning of unknown words from the context.',
+  ]
+},
+
+'20': {
+
+  ability: [
+'Can catch the main point in short, clear, simple messages and announcements.',
+'Can give short, basic descriptions of events and activities.',
+'Can explain what he/she likes or dislikes about something.',
+'Has sufficient vocabulary to conduct routine, everyday transactions involving familiar situations and topics.',
+'Can control a narrow repertoire dealing with concrete everyday needs.',
+'Can tell a story or describe something in a simple list of points.',
+'Can ask very simply for repetition when he/she does not understand.',
+  ],
+  improve: [
+'Practice following the main points of formal lectures or talks and extended discussions around you.',
+'Practice sharing your dreams, hopes, and ambitions, expressing thoughts on increasingly abstract topics.',
+'Focus on intelligibility, stress, pronunciation, and intonation when speaking.',
+'Study politeness conventions, and learning to act appropriately in different contexts.',
+'Practice inferring the meaning of unknown words from the context and deducing sentence meaning.',
+'Try to initiate, maintain, and close face-to-face conversations, inviting others into the discussion.',
+  ]
+},
+
+'22': {
+
+  ability: [
+'Can describe dreams, hopes, and ambitions.',
+'Can describe events, real or imagined.',
+'Can briefly give reasons and explanations for opinions, plans, and actions.',
+'Can enter unprepared into conversations on familiar topics.',
+'Can express the main point he/she wants to make comprehensibly.',
+'Can ask someone to clarify or elaborate what he/she has just said.',
+  ],
+  improve: [
+'Practice providing clear, detailed descriptions on a wide range of subjects related to your field of interest.',
+'Practice explaining a viewpoint on a topical issue giving the advantages and disadvantages of various options.',
+'Practice conveying degrees of emotion and highlighting the personal significance of events and experiences.',
+'Practice identifying arguments supporting and opposing points of view while listening to an animated discussion.',
+'Focus on developing a clear pronunciation and intonation.',
+  ]
+},
+
+'21': {
+
+  ability: [
+'Can catch the main point in short, clear, simple messages and announcements.',
+'Can give short, basic descriptions of events and activities.',
+'Can explain what he/she likes or dislikes about something.',
+'Has sufficient vocabulary to conduct routine, everyday transactions involving familiar situations and topics.',
+'Can control a narrow repertoire dealing with concrete everyday needs.',
+'Can tell a story or describe something in a simple list of points.',
+'Can ask very simply for repetition when he/she does not understand.',
+  ],
+  improve: [
+'Practice following the main points of formal lectures or talks and extended discussions around you.',
+'Practice sharing your dreams, hopes, and ambitions, expressing thoughts on increasingly abstract topics.',
+'Focus on intelligibility, stress, pronunciation, and intonation when speaking.',
+'Study politeness conventions, and learning to act appropriately in different contexts.',
+'Practice inferring the meaning of unknown words from the context and deducing sentence meaning.',
+'Try to initiate, maintain, and close face-to-face conversations, inviting others into the discussion.',
+  ]
+},
+
+'23': {
+
+  ability: [
+'Can catch the main point in short, clear, simple messages and announcements.',
+'Can give short, basic descriptions of events and activities.',
+'Can explain what he/she likes or dislikes about something.',
+'Has sufficient vocabulary to conduct routine, everyday transactions involving familiar situations and topics.',
+'Can control a narrow repertoire dealing with concrete everyday needs.',
+'Can tell a story or describe something in a simple list of points.',
+'Can ask very simply for repetition when he/she does not understand.',
+  ],
+  improve: [
+'Practice following the main points of formal lectures or talks and extended discussions around you.',
+'Practice sharing your dreams, hopes, and ambitions, expressing thoughts on increasingly abstract topics.',
+'Focus on intelligibility, stress, pronunciation, and intonation when speaking.',
+'Study politeness conventions, and learning to act appropriately in different contexts.',
+'Practice inferring the meaning of unknown words from the context and deducing sentence meaning.',
+'Try to initiate, maintain, and close face-to-face conversations, inviting others into the discussion.',
+  ]
+},
+
+'1': {
+
+  ability: [
+'Can keep up with an animated conversation between native speakers.',
+'Can understand most TV news and current affairs programs.',
+'Has acquired a clear, natural pronunciation and intonation.',
+  ],
+  improve: [
+'Practice broadening your lexical repertoire (including your range of idiomatic and colloquial expressions).',
+'Practice giving clear, detailed descriptions of complex subjects.',
+'Practice using appropriate stress and intonation to convey shades of meaning precisely.',
+'Practice using language extensively for social purposes, including emotional, allusive, and joking usage.',
+'Practice expressing yourself fluently in spontaneous conversations and goal-directed contexts.',
+'Practice summarizing long, demanding texts.',
+  ]
+},
+
+'3': {
+
+  ability: [
+'Can catch the main point in short, clear, simple messages and announcements.',
+'Can give short, basic descriptions of events and activities.',
+'Can explain what he/she likes or dislikes about something.',
+'Has sufficient vocabulary to conduct routine, everyday transactions involving familiar situations and topics.',
+'Can control a narrow repertoire dealing with concrete everyday needs.',
+'Can tell a story or describe something in a simple list of points.',
+'Can ask very simply for repetition when he/she does not understand.',
+  ],
+  improve: [
+'Practice following the main points of formal lectures or talks and extended discussions around you.',
+'Practice sharing your dreams, hopes, and ambitions, expressing thoughts on increasingly abstract topics.',
+'Focus on intelligibility, stress, pronunciation, and intonation when speaking.',
+'Study politeness conventions, and learning to act appropriately in different contexts.',
+'Practice inferring the meaning of unknown words from the context and deducing sentence meaning.',
+'Try to initiate, maintain, and close face-to-face conversations, inviting others into the discussion.',
+  ]
+},
+
+'2': {
+
+  ability: [
+'Can catch the main point in short, clear, simple messages and announcements.',
+'Can give short, basic descriptions of events and activities.',
+'Can explain what he/she likes or dislikes about something.',
+'Has sufficient vocabulary to conduct routine, everyday transactions involving familiar situations and topics.',
+'Can control a narrow repertoire dealing with concrete everyday needs.',
+'Can tell a story or describe something in a simple list of points.',
+'Can ask very simply for repetition when he/she does not understand.',
+  ],
+  improve: [
+'Practice following the main points of formal lectures or talks and extended discussions around you.',
+'Practice sharing your dreams, hopes, and ambitions, expressing thoughts on increasingly abstract topics.',
+'Focus on intelligibility, stress, pronunciation, and intonation when speaking.',
+'Study politeness conventions, and learning to act appropriately in different contexts.',
+'Practice inferring the meaning of unknown words from the context and deducing sentence meaning.',
+'Try to initiate, maintain, and close face-to-face conversations, inviting others into the discussion.',
+
+  ]
+},
+};
+
+
+/*
+
+
+
+
+try with this link:
+file:///usr/local/google/home/cassandrax/Desktop/kormo-experiment/index.html?user=5&cond=0&overall=60&sen=65&voc=68&flu=54&pro=52&lang=en
+
+
+----
+
+Send to Jenn:
+
+
+translation spreadsheet -- 
+https://docs.google.com/spreadsheets/d/1TAXnxZJRRj5uLBX8-8touhB4TBI5SUaXDoNnQV4Tx4o/edit?usp=sharing
+
+
+kormo spreadsheet - 
+https://docs.google.com/spreadsheets/d/1sqgFBeZnU7OUYl2G3I-CCirs8LQG0YAsqMT2E9nvs9A/edit#gid=0
+
+
+kormo survey - https://docs.google.com/forms/d/e/1FAIpQLScwfOf2gMugc8N5wEQpqXrt_gFCiZ3_VS10nTLzItFR8mxpJA/viewform?entry.1199897573=333
+
+
+Click for more practice
+Practice to improve your score
+
+stopped here, write a python script to process this stuff --- 
+
+
+// todo: google analytics, test this on mobile
+
+
+
+*/
+
+
+// inspired by https://forge.medium.com/how-to-become-the-best-in-the-world-at-something-f1b658f93428
+
+// more visual inspiration
+// if we can get the proximity of various goals
+// https://observablehq.com/@d3/volcano-contours -- 
+// https://bl.ocks.org/mbostock/1345853 -- transform transitions
+
+const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+Vue.component('control-bar', {
+  props: {
+    name: {type: String, default: 'My skill'},
+    score: {type: Number, default: 0},
+    width: {type: Number, default: 20},
+    height: {type: Number, default: 200},
+  },
+  computed: {
+    values(){
+      return _.range(1, 0, -.01);
+    },
+    percent(){
+      return 100 - this.score*100;
+    },
+    nScore(){
+    	return (this.score - 20)/60;
+    }
+  },
+  data: function(){
+    return {
+     colorScale: d3.interpolateSpectral,
+    };
+  },
+    methods:{
+    valueStyle(value){
+      const valueHeight = this.height / this.values.length;
+      const color = value < this.nScore ? '#444' : '#eee';
+      return {'background-color': color, height: valueHeight + 'px', width: this.width + 'px'};
+    }
+  },
+  template: '#control-bar-template'
+});
+
+
+Vue.component('experiment-bar', {
+  props: {
+    name: {type: String, default: 'My skill'},
+    score: {type: Number, default: 0},
+    width: {type: Number, default: 20},
+    height: {type: Number, default: 200},
+
+    animate: {type:Boolean, default: false},
+  },
+  computed: {
+    values(){
+      return _.range(1, 0, -.01);
+    },
+    percent(){
+      return 100 - this.score*100;
+    },
+    nScore(){
+    	return (this.score - 20)/60;
+    }
+  },
+  data: function(){
+    return {
+     colorScale: d3.interpolateSpectral,
+    };
+  },
+  mounted: async function(){
+
+    const trueHeight = (1-this.nScore)*this.height;
+    this.$refs['grey-bar'].style.height= trueHeight+'px';
+    if (this.animate){
+      var this_ = this; 
+      setInterval(async function(){
+        this_.$refs['grey-bar'].style.height=(trueHeight-20)+'px';
+        await wait(500);
+
+        // height: (1-nScore)*height+'px',
+        this_.$refs['grey-bar'].style.height= trueHeight+'px';
+
+      }, 4000);
+    }
+
+  },
+  methods:{
+    valueStyle(value){
+      const valueHeight = this.height / this.values.length;
+      const color = this.colorScale(value);
+      return {'background-color': color, height: valueHeight + 'px', width: this.width + 'px'};
+    }
+  },
+  template: '#experiment-bar-template'
+});
+
+
+
+
+// Gotchas:
+// DOM does not update for new property additions.
+// DOM does not update for direct assignments within arrays.
+// https://vuejs.org/2016/02/06/common-gotchas/#Why-isn%E2%80%99t-the-DOM-updating  
+new Vue({
+  el: '#app',
+  data: {
+    userSkills: [], // gets updated within mounted
+    roundTo: function (x, num_decimals){
+      return parseFloat(x.toFixed(num_decimals));
+    },
+
+
+    cond: 0, // 0: control, 1: experiment
+    userId: 0,
+    translations: translations,
+    userFeedback: userFeedback,
+    isMounted: false,
+    lang: 'be',
+  },
+
+  mounted(){
+    // window.location.href
+    // file:///usr/local/google/home/cassandrax/Desktop/kormo-experiment/index.html?user=5&cond=0&overall=60&sen=65&voc=68&flu=54&pro=52
+    var url_string = window.location.href; 
+    var url = new URL(url_string);
+
+    if (url.searchParams.get('lang') === 'en'){
+      this.lang = 'en';
+    }
+
+    const terms = ['user', 'cond', 'overall', 'sen', 'voc', 'flu', 'pro'];
+    const vals = terms.map(term => parseInt(url.searchParams.get(term)));
+
+    const urlParams = _.fromPairs(_.zip(terms, vals));
+    this.cond = urlParams.cond;
+    this.userId = urlParams.user;
+
+    this.userSkills = [
+    {
+      name: 'Overall',
+      score: urlParams.overall,
+    },
+    {
+      name: 'Sentences',
+      score: urlParams.sen,
+    },
+    {
+      name: 'Vocabulary',
+      score: urlParams.voc,
+    },
+    {
+      name: 'Fluency',
+      score: urlParams.flu,
+    },
+    {
+      name: 'Pronunciation',
+      score: urlParams.pro,
+    },
+    ];
+    this.isMounted = true;
+
+  },
+
+  methods: {
+    i18n(string){
+      if (this.lang === 'en'){
+        return string;
+      }
+      if (this.translations[string]){
+        return this.translations[string];
+      }
+      return string;
+    }
+  }
+});
+
+
+
+
+
+</script>
