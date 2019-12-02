@@ -2,6 +2,18 @@
 <head>
 <meta charset="utf-8" />
 
+
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-59181255-1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-59181255-1');
+</script>
+
+
+
 <link href="https://fonts.googleapis.com/css?family=Merriweather:400,700|Open+Sans:400,700&display=swap" rel="stylesheet">
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.15/lodash.min.js"></script>
@@ -829,7 +841,7 @@ new Vue({
     roundTo: function (x, num_decimals){
       return parseFloat(x.toFixed(num_decimals));
     },
-
+    elapsedSeconds: 0,
 
     cond: 0, // 0: control, 1: experiment
     userId: 0,
@@ -880,6 +892,31 @@ new Vue({
     ];
     this.isMounted = true;
 
+    // Track that the user loaded the page.
+    gtag('event', 'kormo', {
+      'event_category': 'load',
+      'event_label': 'kormo' + '-' + urlParams.user,
+      'value': 1
+    });
+
+
+    const loadTime = Date.now();
+    var this_ = this;
+    setInterval(function(){
+      this_.elapsedSeconds = (Date.now() - loadTime) / 1000;
+    }, 1000);
+
+
+    // Track how long they spent on the page.
+     window.addEventListener('beforeunload', function() {
+      gtag('event', 'kormo', {
+        'event_category': 'leave',
+        'event_label': 'kormo' + '-' + urlParams.user + '-' + this_.elapsedSeconds,
+        'value': 1
+      });
+
+
+    });
   },
 
   methods: {
