@@ -1,6 +1,7 @@
 <!doctype html>
 <head>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
 
 <!-- Global site tag (gtag.js) - Google Analytics -->
@@ -103,6 +104,17 @@ h4{
   margin-top: 32px;
   margin-bottom: 8px;
 }
+
+em{
+	font-weight: 700;
+	font-size: 120%;
+	font-style: normal;
+	margin-right: 8px
+}
+
+.bar{
+	width: 80px;
+}
 </style>
 
 </head>
@@ -111,7 +123,7 @@ h4{
 
 <div id="app">
 
-<div v-if="isMounted" class="story" style="position:relative; padding: 16px;  max-width:600px">
+<div v-if="isMounted" class="story" style="position:relative; padding: 16px; max-width:500px">
 
   <h1>{{i18n('Your Test Results')}}</h1>
 
@@ -125,22 +137,48 @@ h4{
   frameborder="0"></iframe>
 -->
 
-<div style="margin: 32px 0px">
+<div style="margin: 16px 0px">
 
-<div v-if="cond==0">
-  <control-bar v-for="userSkill in userSkills" :score="userSkill.score" :name="i18n(userSkill.name)" :key="userSkill.name+'control'"></control-bar>
+<div v-if="cond==0" style="margin: 16px 0px">
+  	An Overall score greater than <em>50%</em> is needed for most English-speaking jobs. Your Overall score was {{$root.nScorePct(userSkills[0].score)}}% .
 </div>
 
+
+<div v-if="cond==0">
+  <control-bar class="bar" v-for="userSkill in userSkills" :score="userSkill.score" :name="i18n(userSkill.name)" :key="userSkill.name+'control'"></control-bar>
+</div>
+
+
+</div>
+
+
+
+<div v-if="cond==1">
+	{{i18n('Increase your Overall score to be more employable for English-speaking jobs.')}}
+</div>
 
 <div v-if="cond==1" style="display: grid; grid-auto-flow: column">
 
-  <div style="width:100px; align-self:end; opacity: 0.5; ">
+<!--  <div style="width:100px; align-self:end; opacity: 0.5; ">
     <img src="arrow.png" style="max-width: 100%">
     <div class="sans" style="position: relative; top:-24px; font-size:13px">{{i18n('Practice and improve your score')}}</div>
   </div>
+-->
 
-  <experiment-bar v-for="(userSkill, ind) in userSkills" :animate="ind == 0" :score="userSkill.score" :name="i18n(userSkill.name)" :key="userSkill.name+'experiment'"></experiment-bar>
+
+  <!-- experiment actually -->
+<!--  <control-bar v-for="(userSkill, ind) in userSkills" :animate="ind == 0" :score="userSkill.score" :name="i18n(userSkill.name)" :key="userSkill.name+'experiment'"></control-bar> -->
+  <experiment-bar class="bar" v-for="(userSkill, ind) in userSkills" :score="userSkill.score" :name="i18n(userSkill.name)" :key="userSkill.name+'experiment'"></experiment-bar>
+
 </div>
+
+<div v-if="cond==1" style="margin-top: 16px">
+  <div>
+  	{{i18n('Your strengths are:')}} <em>{{i18n(sortedScores[3])}}</em> <em>{{i18n(sortedScores[2])}}</em>
+  </div>
+  <div>
+  	{{i18n('You can work to improve:')}} <em>{{i18n(sortedScores[0])}}</em> <em>{{i18n(sortedScores[1])}}</em>
+  </div>
 </div>
 
 
@@ -158,15 +196,15 @@ h4{
 
 
 <h4>{{i18n('Please take this 1 min survey...')}}</h4>
-<iframe :src="'https://docs.google.com/forms/d/e/1FAIpQLScwfOf2gMugc8N5wEQpqXrt_gFCiZ3_VS10nTLzItFR8mxpJA/viewform?embedded=true&entry.1199897573=' + userId" width="640" height="1003" frameborder="0" marginheight="0" marginwidth="0">Loading…</iframe>
+<iframe :src="'https://docs.google.com/forms/d/e/1FAIpQLScwfOf2gMugc8N5wEQpqXrt_gFCiZ3_VS10nTLzItFR8mxpJA/viewform?embedded=true&entry.1199897573=' + userId" width="500" height="1003" frameborder="0" marginheight="0" marginwidth="0">Loading…</iframe>
 
-</div> <!-- end center div -->
+</div> <!-- end mounted div -->
 </div> <!-- end #app -->
 
 
 
 <script type="text/x-template" id="control-bar-template">
-<div style="position:relative; display:inline-block; width:104px;">
+<div style="position:relative; display:inline-block; ">
 
   <div class="sans smaller" style="text-transform:capitalize; margin-bottom:4px;">
     <div style="font-weight:700">{{name}}</div> 
@@ -183,7 +221,7 @@ h4{
 
 <script type="text/x-template" id="experiment-bar-template">
 
-<div style="display:inline-block; width:104px;">
+<div style="display:inline-block;">
   <div class="sans smaller" style="text-transform:capitalize; margin-bottom:4px;">
     <div style="font-weight:700">{{name}}</div> 
   </div>
@@ -873,6 +911,7 @@ stopped here, write a python script to process this stuff ---
 // https://observablehq.com/@d3/volcano-contours -- 
 // https://bl.ocks.org/mbostock/1345853 -- transform transitions
 
+
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 Vue.component('control-bar', {
@@ -901,7 +940,7 @@ Vue.component('control-bar', {
     methods:{
     valueStyle(value){
       const valueHeight = this.height / this.values.length;
-      const color = value < this.nScore ? '#444' : '#eee';
+      const color = value < this.nScore ? '#bbb' : '#eee';
       return {'background-color': color, height: valueHeight + 'px', width: this.width + 'px'};
     }
   },
@@ -954,7 +993,7 @@ Vue.component('experiment-bar', {
   methods:{
     valueStyle(value){
       const valueHeight = this.height / this.values.length;
-      const color = this.colorScale(value);
+      const color = '#bbb'; //this.colorScale(value);
       return {'background-color': color, height: valueHeight + 'px', width: this.width + 'px'};
     }
   },
@@ -972,9 +1011,6 @@ new Vue({
   el: '#app',
   data: {
     userSkills: [], // gets updated within mounted
-    roundTo: function (x, num_decimals){
-      return parseFloat(x.toFixed(num_decimals));
-    },
     elapsedSeconds: 0,
 
     cond: 0, // 0: control, 1: experiment
@@ -1052,8 +1088,25 @@ new Vue({
 
     });
   },
+  computed: {
+  	sortedScores(){
+  		if (this.userSkills.length < 1){
+  			return;
+  		}
+
+  		const nonOverall = this.userSkills.slice(1);
+  		const sorted = _.sortBy(nonOverall, skill => skill.score);
+  		return sorted.map(skill => skill.name);
+  	}
+  },
 
   methods: {
+    roundTo: function (x, num_decimals){
+      return parseFloat(x.toFixed(num_decimals));
+    },
+  	nScorePct(score){
+  		return this.roundTo((score-20)/60 * 100);
+  	},
     i18n(string){
       if (this.lang === 'en'){
         return string;
