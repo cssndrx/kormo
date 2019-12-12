@@ -1,7 +1,7 @@
 <!doctype html>
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=500">
+<meta name="viewport" content="width=500, initial-scale=1, minimum-scale=0.86">
 
 
 <!-- Global site tag (gtag.js) - Google Analytics -->
@@ -140,7 +140,12 @@ em{
 <div style="margin: 16px 0px">
 
 <div v-if="cond==0" style="margin: 16px 0px">
-  	An Overall score greater than <em>50%</em> is needed for most English-speaking jobs. Your Overall score was {{$root.nScorePct(userSkills[0].score)}}% .
+	<span v-if="lang=='en'">
+	  	An Overall score greater than <em>50%</em> is needed for most English-speaking jobs. Your Overall score was {{$root.nScorePct(userSkills[0].score)}}% .
+	</span>
+	<span v-else>
+		ইংরেজিতে কথোপকথন প্রয়োজন হয় এমন চাকরির জন্য ইংরেজিতে আপনার সামগ্রিক দক্ষতার স্কোর <em>50%</em> এর বেশি হওয়া উচিত।. আপনার সামগ্রিক স্কোর হচ্ছে {{$root.nScorePct(userSkills[0].score)}}%.
+	</span>
 </div>
 
 
@@ -243,18 +248,22 @@ em{
 <script>
 
 const translations = {
+'Your strengths are:': 'আপনার দক্ষ দিকগুলো: ',
+'You can work to improve:': 'আপনি যেসকল দক্ষতার উন্নয়ন করা উচিত: ',
+'Increase your Overall score to be more employable for English-speaking jobs.': 'ইংরেজিতে কথোপকথন প্রয়োজন হয় এমন চাকরির জন্য ইংরেজিতে আপনার সামগ্রিক দক্ষতার উন্নয়ন করা উচিত',
+'Your Overall score was X%': 'আপনার সামগ্রিক স্কোর হচ্ছে X%',
+'An Overall score greater than 50% is needed for most English-speaking jobs. ': 'ইংরেজিতে কথোপকথন প্রয়োজন হয় এমন চাকরির জন্য ইংরেজিতে আপনার সামগ্রিক দক্ষতার স্কোর ৫০% এর বেশি হওয়া উচিত। ',
 'Overall': 'সামগ্রিক',
-'Sentences': 'বাক্য গুলো',
-'Vocabulary': 'শব্দতালিকা',
-'Fluency': 'সাবলীলতা',
-'Pronunciation': 'উচ্চারণ',
+'Sentences': 'বাক্য তৈরী করা',
+'Vocabulary': 'শব্দজ্ঞান',
+'Fluency': 'সাবলীলভাবে কথা বলা ',
+'Pronunciation': 'সঠিক উচ্চারণ',
 'Practice and improve your score': 'আপনার স্কোর ভালো করতে প্র্যাক্টিস করুন',
-
 'Your Test Results': 'আপনার টেস্ট এর ফলাফল',
 'Click to improve your score': 'আপনার স্কোর ভালো করতে ক্লিক করুন',
 'Click to practice': 'অনুশীলন করতে ক্লিক করুন',
-'You are able to...': 'আপনি পারেন...',
-'To improve, you could...': 'স্কোর ভালো করতে আপনি করতে পারেন....',
+'You are able to...': 'আপনি যা পারেন...',
+'To improve, you could...': 'স্কোর ভালো করতে আপনি যা করতে পারেন....',
 'Please take this 1 min survey...': 'অনুগ্রহ করে ১ মিনিট এর সার্ভে-তে অংশগ্রহণ করুন.....',
 'Kormo Language Test Survey': 'Kormo ল্যাঙ্গুয়েজে টেস্ট এর সার্ভে করুন',
 'Are your scores higher or lower than you expected?': 'আপনার অর্জন করা স্কোর কি আপনার আশা থেকে কম নাকি বেশি ? ',
@@ -269,37 +278,37 @@ const translations = {
 'Study id (please do not change the pre-filled value). ': 'স্টাডি আইডি (অনুগ্রহ করে ইতিমধ্যে পূরণ করা তথ্য সমূহ পরিবর্তন করবেন না)',
 'Practice giving clear, detailed descriptions of complex subjects.': 'কঠিন বিষয়গুলোর স্পষ্ট ও বিস্তারিত বর্ণনা দেওয়ার অনুশীলন করুন।',
 'Practice using language extensively for social purposes, including emotional, allusive, and joking usage.': 'সমাজে ব্যবহার, ইঙ্গিতপূর্ণ ব্যবহার, সংবেদনশীলক্ষেত্রে ব্যবহার ও রসিকতায় ব্যবহার করার মতো ভাষা অনুশীলন করুন',
-'Can describe events, real or imagined.': 'বর্ণনা করতে পারে বাস্তব অথবা অবাস্তব ঘটনা সমূহ',
-'May be able to understand a few words when addressed directly and slowly.': 'যখন সরাসরি এবং ধীর গতিতে কথোপকথন করা হয় তখন কিছু শব্দ বুঝতে পারে',
-'Can control a narrow repertoire dealing with concrete everyday needs.': 'দৈনন্দিন কাজের জন্য প্রয়োজনীয় ভাষার বিভিন্ন ধরণের সংক্ষিপ্তরূপের এর উপর নিয়ন্ত্রণ আছে',
-'May be able to ask and tell day, time of day, and date.': 'দিন, দিনের কোনো এক সময়, এবং তারিখ জিজ্ঞেস করতে পারে অথবা উত্তর দিতে পারে ',
-'Has a very basic range of simple expressions about personal details and needs of a concrete type.': 'দৈনন্দিন কাজের জন্য এবং নিজস্ব বিবরণের উপর প্রয়োজনীয় এক্সপ্রেশনের উপর নিয়ন্ত্রণ রয়েছে',
-'Practice sharing your dreams, hopes, and ambitions, expressing thoughts on increasingly abstract topics.': 'নিজ থেকে বানানো কিছু বিষয়ে আপনার স্বপ্ন, আশা এবং ভবিষ্যতের পরিকল্পনা শেয়ার করতে শিখুন ',
+'Can describe events, real or imagined.': 'বর্ণনা করতে পারেন বাস্তব অথবা অবাস্তব ঘটনা সমূহ',
+'May be able to understand a few words when addressed directly and slowly.': 'যখন সরাসরি এবং ধীর গতিতে কথোপকথন করা হয় তখন কিছু শব্দ বুঝতে পারেন',
+'Can control a narrow repertoire dealing with concrete everyday needs.': 'দৈনন্দিন কাজের জন্য প্রয়োজনীয় ভাষার বিভিন্ন ধরণের সংক্ষিপ্তরূপের ব্যবহার করতে পারেন',
+'May be able to ask and tell day, time of day, and date.': 'দিন, দিনের কোনো এক সময়, এবং তারিখ জিজ্ঞেস করতে পারেন অথবা উত্তর দিতে পারেন',
+'Has a very basic range of simple expressions about personal details and needs of a concrete type.': 'দৈনন্দিন কাজের জন্য এবং নিজস্ব বিবরণের উপর প্রয়োজনীয় এক্সপ্রেশনের উপর নিয়ন্ত্রণ রয়েছে আপনার',
+'Practice sharing your dreams, hopes, and ambitions, expressing thoughts on increasingly abstract topics.': 'নিজ থেকে বানানো কিছু বিষয়ে আপনার স্বপ্ন, আশা এবং ভবিষ্যতের পরিকল্পনা শেয়ার করতে শিখুন',
 'Practice telling stories, giving descriptions of events and activities in as much detail as you can.': 'গল্প বলা প্রাকটিস করুন, কোনো একটা ইভেন্টের ব্যপারে বিস্তারিত বলতে শিখুন',
 'Can give short, basic descriptions of events and activities.': 'কোনো একটা ইভেন্টের ছোট এবং প্রাথমিক বর্ণনা দিতে সক্ষম',
-'Can explain what he/she likes or dislikes about something.': 'পছন্দ এবং অপছন্দের জিনিস গুলো বর্ণনা করতে পারে',
+'Can explain what he/she likes or dislikes about something.': 'পছন্দ এবং অপছন্দের জিনিস গুলো বর্ণনা করতে পারেন',
 'Can ask very simply for repetition when he/she does not understand.': 'যখন কোনো কিছু বুঝতে সমস্যা হয় তখন পুনরাবৃতি করার জন্য সহজভাবে জিজ্ঞেস করতে সক্ষম',
-'Practice using appropriate stress and intonation to convey shades of meaning precisely.': 'উপযুক্ত স্বরভঙ্গি এবং নিশ্বাস নিয়ে প্রাকটিস করা শিখুন বিভিন্ন শব্দ অর্থের ধরণ সঠিকভাবে',
-'Can understand most TV news and current affairs programs.': 'কারেন্ট অ্যাফেয়ার্স অথবা টিভি-তে প্রচারিত সংবাদ সহজেই বুঝতে পারে',
+'Practice using appropriate stress and intonation to convey shades of meaning precisely.': 'উপযুক্ত স্বরভঙ্গি এবং নিশ্বাস নিয়ে প্রাকটিস করা শিখুন বিভিন্ন শব্দ অর্থের ধরণ সঠিকভাবে প্রয়োগ শিখুন',
+'Can understand most TV news and current affairs programs.': 'কারেন্ট অ্যাফেয়ার্স অথবা টিভি-তে প্রচারিত সংবাদ সহজেই বুঝতে পারেন',
 'Try to initiate, maintain, and close face-to-face conversations, inviting others into the discussion.': 'অন্যানদের সাথে কথা বলা শুরু করা , চালিয়ে যাওয়া এবং সঠিকভাবে কথোপকথন শেষ করার চেষ্টা করুন',
 'Can briefly give reasons and explanations for opinions, plans, and actions.': 'নিজস্ব অভিমত, পরিকল্পনা এবং কাজের পিছনের যুক্তি সুন্দরভাবে বোঝাতে সক্ষম',
 'Practice asking and answering questions about habits and routines.': 'অভ্যাস এবং দৈনন্দিন কাজের ব্যপারে প্রশ্ন-উত্তর করতে সক্ষম',
 'Practice providing clear, detailed descriptions on a wide range of subjects related to your field of interest.': 'আপনার ইচ্ছাকৃত যেকোনো ক্ষেত্রের উপর পরিষ্কার এবং বিস্তারিত বর্ণনা দিতে শিখুন',
 'Practice summarizing long, demanding texts.': 'বিশাল টেক্সটের সংক্ষিপ্তকরণ প্রাকটিস করুন ',
 'Study politeness conventions, and learning to act appropriately in different contexts.': 'বিভিন্ন কন্টেক্সটে কথা বলার সময় বিনয়ী থাকা ও ভালোভাবে কথা বলা শিখুন',
-'Can catch the main point in short, clear, simple messages and announcements.': 'আসল বিষয় ছোট আকারে, পরিষ্কারভাবে বলা হলে তা বুঝতে পারে',
-'Can produce simple, mainly isolated phrases about people and places.': 'মানুষ এবং জায়গা সম্মন্ধে ছোট বাক্যাংশ তৈরী করতে পারে',
+'Can catch the main point in short, clear, simple messages and announcements.': 'আসল বিষয় ছোট আকারে, পরিষ্কারভাবে বলা হলে তা বুঝতে পারেন',
+'Can produce simple, mainly isolated phrases about people and places.': 'মানুষ এবং জায়গা সম্মন্ধে ছোট বাক্যাংশ তৈরী করতে পারেন',
 'Focus on developing a clear pronunciation and intonation.': 'পরিষ্কার উচ্চারণ ও স্বরভঙ্গি এর উন্নয়নের দিকে নজর দিন',
 'Practice conveying degrees of emotion and highlighting the personal significance of events and experiences.': 'যেকোনো ইভেন্ট অথবা অভিজ্ঞতার উপর ভিত্তি করে অনুভতির ভিন্ন মাত্রা প্রকাশ করার অভ্যাস করুন',
-'Can enter unprepared into conversations on familiar topics.': 'জানা বিষয়ের উপর কথোপকথনে প্রস্তুতি ছাড়া যোগ হতে পারে ',
-'Can describe him/herself, what he/she does, and where he/she lives.': 'নিজের ব্যপারে বিস্তারিত বলতে পারে যেমন বর্তমানে যা করছে এবং যেখানে থাকে',
+'Can enter unprepared into conversations on familiar topics.': 'জানা বিষয়ের উপর কথোপকথনে প্রস্তুতি ছাড়া যোগ হতে পারেন',
+'Can describe him/herself, what he/she does, and where he/she lives.': 'নিজের ব্যপারে বিস্তারিত বলতে পারেন যেমন বর্তমানে যা করছেন এবং যেখানে থাকেন',
 'Practice explaining a viewpoint on a topical issue giving the advantages and disadvantages of various options.': 'সাময়িক সমস্যার উপরে বিভিন্ন সমাধানের সুবিধা ও সুবিধার উপর ভিত্তি করে আপনার নিজস্ব দৃষ্টিকোণ ব্যাখ্যা করার চর্চা করুন',
 'Can handle numbers, quantities, cost, and time.': 'নম্বর, পরিমান, খরচ এবং সময় বুঝতে সক্ষম ',
-'Practice identifying arguments supporting and opposing points of view while listening to an animated discussion.': 'যেকোনো এনিমেটেড কথাবার্তার উপর ভিত্তি করে কোনো আর্গুমেন্ট এর পক্ষের ও বিপক্ষের পয়েন্ট  গুলো সনাক্ত করা',
+'Practice identifying arguments supporting and opposing points of view while listening to an animated discussion.': 'যেকোনো এনিমেটেড কথাবার্তার উপর ভিত্তি করে কোনো আর্গুমেন্ট এর পক্ষের ও বিপক্ষের পয়েন্ট  গুলো সনাক্ত করা প্রাকটিস করুন',
 'May be able to use some basic greetings.': 'সাধারণ অভিবাদনগুলি ব্যবহার করতে সক্ষম',
 'Practice expressing yourself fluently in spontaneous conversations and goal-directed contexts.': 'স্বতঃস্ফূর্ত ও লক্ষ্য-নির্দেশিত কথোপকথনে সাবলীল এবং আত্মবিশ্বাসের সাথে নিজেকে প্রকাশ করার চর্চা করুন',
-'Can ask someone to clarify or elaborate what he/she has just said.': 'কেউ কিছু বললে তা বিস্তারিত বলার জন্য জিজ্ঞেস করতে পারে',
-'Use the overall meaning of texts and utterances to derive the probable meaning of unknown words from the context.': 'যেকোনো টেক্সটের সামগ্রিক অর্থ ও উচারণের ব্যবহার করে অজানা শব্দের সম্ভাব্য অর্থ বের করা',
+'Can ask someone to clarify or elaborate what he/she has just said.': 'কেউ কিছু বললে তা বিস্তারিত বলার জন্য জিজ্ঞেস করতে পারেন',
+'Use the overall meaning of texts and utterances to derive the probable meaning of unknown words from the context.': 'যেকোনো টেক্সটের সামগ্রিক অর্থ ও উচারণের ব্যবহার করে অজানা শব্দের সম্ভাব্য অর্থ বের করা শিখুন',
 'Practice inferring the meaning of unknown words from the context and deducing sentence meaning.': 'প্রসঙ্গ অনুযায়ী এবং কোনো বাক্য এর অর্থ অনুমান করে অজানা শব্দের অর্থ বের করার চর্চা করুন',
 'Can describe dreams, hopes, and ambitions.': 'স্বপ্ন, আশা এবং ভবিষ্যতের পরিকল্পনা শেয়ার করতে সক্ষম',
 'Practice following the main points of formal lectures or talks and extended discussions around you.': 'ফর্মাল বক্তব্য অথবা কথোপকথনের উপর ভিত্তি করে আলোচনা দীর্ঘায়িত করার চেষ্টা করুন',
@@ -309,12 +318,12 @@ const translations = {
 'Has sufficient vocabulary to conduct routine, everyday transactions involving familiar situations and topics.': 'পরিচিত বিষয়বস্তু অথবা অবস্থা নিয়ে দৈনন্দিন কথা বলার জন্য যথেষ্ট শব্দজ্ঞান আছে',
 'Focus on intelligibility, stress, pronunciation, and intonation when speaking.': 'কথা বলার সময় খেয়ালে রাখবেন শব্দের বোধগম্যতা, সঠিক উচ্চারণ, উচ্চারণের উচ্চতা এবং নিম্নতা',
 'Can express the main point he/she wants to make comprehensibly.': 'যা বলতে ইচ্ছুক তার মূল পয়েন্ট সমূহ বিস্তারিতভাবে বলতে সক্ষম',
-'Can keep up with an animated conversation between native speakers.': 'একজন নেটিভ বক্তার সাথে এনিমেটেড কথা বলা চালিয়ে যেতে পারে ',
+'Can keep up with an animated conversation between native speakers.': 'একজন নেটিভ বক্তার সাথে এনিমেটেড কথা বলা চালিয়ে যেতে পারেন',
 'Practice broadening your lexical repertoire (including your range of idiomatic and colloquial expressions).': 'আপনার শব্দজ্ঞান বাড়ানোর চর্চা করুন (বাগধারা ও চলিত ভাষার ব্যবহার সহ)',
 'Has acquired a clear, natural pronunciation and intonation.': 'স্পষ্ট ও স্বাভাবিক উচ্চারণ এবং উচ্চারণভঙ্গি আছে ',
 'Shows only limited control of a few simple grammatical structures and sentence patterns in a learnt repertoire.': 'গ্রামার এর সাধারণ স্ট্রাকচার এবং বাক্য প্যাটার্ন এর উপর কিছুটা নিয়ন্ত্রণ আছে',
 'Practice pronunciation by modeling target sounds.': 'নির্দিষ্ট শব্দ বাছাই করে নিয়মিত উচ্চারণ প্রাকটিস করুন',
-'May be able to make simple purchases where pointing or other gestures can support the verbal reference.': 'শব্দ সমূহ কিছুটা বুঝতে পারে যদি শব্দের সাথে অঙ্গভঙ্গি থাকে অথবা পয়েন্ট করে বলা হয়',
+'May be able to make simple purchases where pointing or other gestures can support the verbal reference.': 'শব্দ সমূহ কিছুটা বুঝতে পারেন যদি শব্দের সাথে অঙ্গভঙ্গি থাকে অথবা পয়েন্ট করে বলা হয়',
 };
 
 
